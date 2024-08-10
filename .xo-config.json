@@ -1,0 +1,9 @@
+{
+    "space": true,
+    "ignores": [
+        "script/",
+        "esbuild.js",
+        "ava.config.js",
+        "src/schema/alliodiagram.ts"
+    ]
+}

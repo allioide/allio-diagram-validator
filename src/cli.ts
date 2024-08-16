@@ -17,13 +17,15 @@ async function main(): Promise<void> {
   const program = new Command();
   program
     .argument('<input-path>', 'path to the input diagram file')
+    .option('-v, --verbose', 'display more error messages')
     .version('0.0.1');
   program.parse();
 
+  const options = program.opts();
   const sourcePath = program.args[0];
   const fileContent = await fs.readFile(sourcePath, 'utf8');
   try {
-    loadDiagramFromString(fileContent);
+    loadDiagramFromString(fileContent, options.verbose as boolean);
   } catch (error) {
     if (error instanceof DiagramValidationError) {
       printError(sourcePath, error);

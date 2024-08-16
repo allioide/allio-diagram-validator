@@ -1,11 +1,12 @@
-import {type ErrorObject} from 'ajv';
+export class DiagramValidationErrorDetail {
+  constructor(public line: number | undefined, public character: number | undefined, public severity: 'error' | 'warning', public message: string) {}
+}
 
 export class DiagramValidationError extends Error {
-  errors: ErrorObject[];
+  detail: DiagramValidationErrorDetail[];
 
-  constructor(errors: ErrorObject[]) {
+  constructor(detail: DiagramValidationErrorDetail[]) {
     super();
-    // FIXME: parse error and store in custom format
-    this.errors = errors;
+    this.detail = detail;
   }
 }

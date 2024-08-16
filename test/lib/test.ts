@@ -1,44 +1,24 @@
 import {readFile} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import test from 'ava';
+import test, {type ExecutionContext} from 'ava';
 import {loadDiagramFromString} from '../../src/loader.js';
-import {DiagramValidationError} from '../../src/util/errors.js';
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 
-test('empty diagram', async t => {
-  const fileContent = await readFile(path.join(dirname, 'assets', 'empty.alliodiagram'), 'utf8');
+async function runTestShoudPass(t: ExecutionContext, filename: string) {
+  const fileContent = await readFile(path.join(dirname, 'assets', filename), 'utf8');
   t.notThrows(() => loadDiagramFromString(fileContent));
-});
+}
 
-test('error when missing devices section', async t => {
-  const fileContent = await readFile(path.join(dirname, 'assets', 'missing_devices_section.alliodiagram'), 'utf8');
+async function runTestAndSnapshotException(t: ExecutionContext, filename: string) {
+  const fileContent = await readFile(path.join(dirname, 'assets', filename), 'utf8');
   const error = t.throws(() => loadDiagramFromString(fileContent));
-  if (error instanceof DiagramValidationError) {
-    // TODO: check error message
-    t.pass();
-  } else {
-    t.fail();
-  }
-});
+  t.snapshot(error);
+}
 
-test('error when missing diagrams section', async t => {
-  const fileContent = await readFile(path.join(dirname, 'assets', 'missing_diagrams_section.alliodiagram'), 'utf8');
-  const error = t.throws(() => loadDiagramFromString(fileContent));
-  if (error instanceof DiagramValidationError) {
-    t.pass();
-  } else {
-    t.fail();
-  }
-});
-
-test.failing('error when missing end block', async t => {
-  const fileContent = await readFile(path.join(dirname, 'assets', 'missing_end_or_back_1.alliodiagram'), 'utf8');
-  const error = t.throws(() => loadDiagramFromString(fileContent));
-  if (error instanceof DiagramValidationError) {
-    t.pass();
-  } else {
-    t.fail();
-  }
-});
+test('empty diagram', async t => runTestShoudPass(t, 'empty.alliodiagram'));
+test('error when missing devices section', async t => runTestAndSnapshotException(t, 'missing_devices_section.alliodiagram'));
+test('error when missing diagrams section', async t => runTestAndSnapshotException(t, 'missing_diagrams_section.alliodiagram'));
+test.failing('error when missing end block (1/2)', async t => runTestAndSnapshotException(t, 'missing_end_or_back_1.alliodiagram'));
+test.failing('error when missing end block (2/2)', async t => runTestAndSnapshotException(t, 'missing_end_or_back_2.alliodiagram'));

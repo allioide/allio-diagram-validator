@@ -5,7 +5,7 @@ import {parse, YAMLParseError} from 'yaml';
 import {getLocationForJsonPath, parseWithPointers, type YamlParserResult} from '@stoplight/yaml';
 import {type ALLIODiagram} from './schema/alliodiagram.js';
 import allioDiagramSchema from './schema/alliodiagram_ajv.json' with { type: 'json' };
-import {DiagramValidationError, DiagramValidationErrorDetail} from './util/errors.js';
+import {DiagramValidationError} from './util/errors.js';
 
 let cacheValidatorOption: Options | undefined;
 let cacheValidator: ValidateFunction<ALLIODiagram> | undefined;
@@ -33,7 +33,7 @@ function shouldSkipErrorObject(error: ErrorObject): boolean {
   return false;
 }
 
-function parseAjvErrorObject(parseResult: YamlParserResult<unknown>, error: ErrorObject): DiagramValidationErrorDetail {
+function parseAjvErrorObject(parseResult: YamlParserResult<unknown>, error: ErrorObject): DiagramValidationError {
   const pathInYaml = error.instancePath.slice(1).split('/'); // '/diagrams/0/content' => ['diagrams', '0', 'content']
   let message = error.message ?? '-';
 
@@ -47,10 +47,15 @@ function parseAjvErrorObject(parseResult: YamlParserResult<unknown>, error: Erro
 
   const locationInYaml = getLocationForJsonPath(parseResult, pathInYaml);
   const line = locationInYaml?.range.start.line; // Ajv line number start at 0
-  return new DiagramValidationErrorDetail(line ? line + 1 : undefined, locationInYaml?.range.start.character, 'error', message);
+  return new DiagramValidationError(line ? line + 1 : undefined, locationInYaml?.range.start.character, 'error', message);
 }
 
-export function loadDiagramFromString(fileContent: string, verbose: boolean): ALLIODiagram {
+export interface DiagramLoaderResult {
+  diagram: ALLIODiagram | undefined;
+  errors: DiagramValidationError[];
+}
+
+export function loadDiagramFromString(fileContent: string, verbose: boolean): DiagramLoaderResult {
   // Validate the syntax of the YAML file
   let diagram;
   try {
@@ -58,7 +63,7 @@ export function loadDiagramFromString(fileContent: string, verbose: boolean): AL
   } catch (error) {
     if (error instanceof YAMLParseError) {
       const linePos = error.linePos?.[0];
-      throw new DiagramValidationError([new DiagramValidationErrorDetail(linePos?.line, linePos?.col, 'error', error.message)]);
+      return { diagram: undefined, errors: [new DiagramValidationError(linePos?.line, linePos?.col, 'error', error.message)]};
     } else {
       throw error;
     }
@@ -83,9 +88,12 @@ export function loadDiagramFromString(fileContent: string, verbose: boolean): AL
 
         return false;
       });
-    throw new DiagramValidationError(errors);
+    return { diagram: undefined, errors: errors};
   }
 
+  // Validate diagram connection
+
+
   // TODO: additional validataion not cover by the schema
-  return diagram;
+  return { diagram: diagram, errors: []};
 }

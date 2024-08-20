@@ -1,2 +1,2 @@
-export {loadDiagramFromString} from './loader.js';
-export {DiagramValidationError, DiagramValidationErrorDetail} from './util/errors.js';
+export {loadDiagramFromString, DiagramLoaderResult} from './loader.js';
+export {DiagramValidationError} from './util/errors.js';

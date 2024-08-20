@@ -8,13 +8,15 @@ const dirname = path.dirname(fileURLToPath(import.meta.url));
 
 async function runTestShoudPass(t: ExecutionContext, filename: string) {
   const fileContent = await readFile(path.join(dirname, 'assets', filename), 'utf8');
-  t.notThrows(() => loadDiagramFromString(fileContent, false));
+  const result = loadDiagramFromString(fileContent, false);
+  t.assert(result.errors.length === 0);
 }
 
 async function runTestAndSnapshotException(t: ExecutionContext, filename: string) {
   const fileContent = await readFile(path.join(dirname, 'assets', filename), 'utf8');
-  const error = t.throws(() => loadDiagramFromString(fileContent, false));
-  t.snapshot(error);
+  const result = loadDiagramFromString(fileContent, false);
+  t.assert(result.errors.length !== 0);
+  t.snapshot(result.errors);
 }
 
 test('empty diagram', async t => runTestShoudPass(t, 'empty.alliodiagram'));

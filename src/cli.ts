@@ -3,7 +3,7 @@ import process from 'node:process';
 import chalk from 'chalk';
 import {Command} from 'commander';
 import {loadDiagramFromString} from './loader.js';
-import {DiagramValidationError} from './util/errors.js';
+import {type DiagramValidationError} from './util/errors.js';
 
 function printError(soucePath: string, errors: DiagramValidationError[]) {
   for (const error of errors) {
@@ -26,7 +26,7 @@ async function main(): Promise<void> {
   const fileContent = await fs.readFile(sourcePath, 'utf8');
   try {
     const result = loadDiagramFromString(fileContent, options.verbose as boolean);
-    if (result.errors.length !== 0) {
+    if (result.errors.length > 0) {
       printError(sourcePath, result.errors);
       process.exitCode = 1;
     }

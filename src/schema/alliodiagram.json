@@ -164,6 +164,7 @@
         "diagrams": {
             "type": "array",
             "items": {
+                "title": "Diagram",
                 "type": "object",
                 "properties": {
                     "name": {
@@ -188,6 +189,7 @@
                                     },
                                     "additionalProperties": false,
                                     "required": [
+                                        "id",
                                         "type"
                                     ]
                                 },
@@ -214,6 +216,7 @@
                                     },
                                     "additionalProperties": false,
                                     "required": [
+                                        "id",
                                         "type"
                                     ]
                                 },
@@ -272,6 +275,7 @@
                                     },
                                     "additionalProperties": false,
                                     "required": [
+                                        "id",
                                         "type"
                                     ]
                                 },
@@ -288,6 +292,7 @@
                                     },
                                     "additionalProperties": false,
                                     "required": [
+                                        "id",
                                         "type"
                                     ]
                                 }

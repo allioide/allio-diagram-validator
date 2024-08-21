@@ -12,10 +12,11 @@ export interface ALLIODiagram {
     name: string;
     type: string;
   }[];
-  diagrams: {
-    name?: string;
-    content: DiagramComponent[];
-  }[];
+  diagrams: Diagram[];
+}
+export interface Diagram {
+  name?: string;
+  content: DiagramComponent[];
 }
 export interface Begin {
   type: "begin";

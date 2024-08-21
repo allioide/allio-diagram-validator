@@ -3,11 +3,14 @@ import {
 } from 'ajv';
 import {parse, YAMLParseError} from 'yaml';
 import {getLocationForJsonPath, parseWithPointers, type YamlParserResult} from '@stoplight/yaml';
-import {type DiagramComponent, type ALLIODiagram} from './schema/alliodiagram.js';
+import {
+  type DiagramComponent, type ALLIODiagram, type Diagram, type Begin,
+} from './schema/alliodiagram.js';
 import allioDiagramSchema from './schema/alliodiagram_ajv.json' with { type: 'json' };
 import {DiagramValidationError} from './util/errors.js';
 import {
   type DiagramErrorDetail, generateDiagramTransitionMap, generateIdToDiagramComponentMap, getRootBeginComponent,
+  getUnconditionTransition,
 } from './util/alliodiagram.js';
 
 let cacheValidatorOption: Options | undefined;
@@ -61,7 +64,64 @@ function parseDiagramErrorDetail(parseResult: YamlParserResult<unknown>, diagram
 }
 
 function hasErrorWithSeverityError(detail: DiagramErrorDetail[]): boolean {
-  return detail.find(element => element.severity === 'error') !== undefined;
+  return detail.some(element => element.severity === 'error');
+}
+
+function checkComponentReachability(diagram: Diagram, rootBegin: Begin, diagramTransitionMap: Map<DiagramComponent, DiagramComponent[]>): DiagramErrorDetail[] {
+  const visited = new Set<DiagramComponent>();
+  const queue: DiagramComponent[] = [rootBegin];
+  while (queue.length > 0) {
+    const currentComponent = queue.shift()!;
+    visited.add(currentComponent);
+    const children = diagramTransitionMap.get(currentComponent);
+    if (children) {
+      queue.push(...children.filter(component => !visited.has(component)));
+    }
+  }
+
+  const unreachableComponents = diagram.content.filter(component => !visited.has(component));
+  if (unreachableComponents.length > 0) {
+    const errors: DiagramErrorDetail[] = unreachableComponents.map(component => ({
+      location: ['content', diagram.content.indexOf(component).toString()],
+      severity: 'warning',
+      message: 'found unreachable diagram component',
+    }));
+    return errors;
+  }
+
+  return [];
+}
+
+function checkDiagramConnection(diagram: Diagram, rootBegin: Begin, diagramTransitionMap: Map<DiagramComponent, DiagramComponent[]>): DiagramErrorDetail[] {
+  const queue: DiagramComponent[] = [rootBegin];
+  const visited = new Set<DiagramComponent>();
+  const errors: DiagramErrorDetail[] = [];
+  while (queue.length > 0) {
+    const currentComponent = queue.shift()!;
+    visited.add(currentComponent);
+
+    const children = diagramTransitionMap.get(currentComponent);
+    if (children) {
+      const unconditionTransitions = getUnconditionTransition(children);
+      if (unconditionTransitions.length > 1) {
+        errors.push(...(unconditionTransitions.map(element => ({
+          location: ['content', diagram.content.indexOf(element).toString()],
+          severity: 'error',
+          message: 'found multiple transitions without any condition originate from the same source',
+        })) as DiagramErrorDetail[]));
+      }
+
+      queue.unshift(...children.filter(component => !visited.has(component)));
+    } else if (currentComponent.type !== 'back to begin' && currentComponent.type !== 'end') {
+      errors.push({
+        location: ['content', diagram.content.indexOf(currentComponent).toString()],
+        severity: 'error',
+        message: 'diagram should end with a "Back to Begin" or an "End" block',
+      });
+    }
+  }
+
+  return errors;
 }
 
 export type DiagramLoaderResult = {
@@ -138,27 +198,19 @@ export function loadDiagramFromString(fileContent: string, verbose: boolean): Di
 
     const rootBegin = rootBeginComponentResult.result!;
 
-    // Check component reachability
+    // Build transition map to speedup diagram traversal
     const diagramTransitionMap = generateDiagramTransitionMap(diagram, idToDiagramComponentMap);
-    const visited = new Set<DiagramComponent>();
-    const queue: DiagramComponent[] = [rootBegin];
-    while (queue.length > 0) {
-      const currentComponent = queue.shift()!;
-      visited.add(currentComponent);
-      const children = diagramTransitionMap.get(currentComponent);
-      if (children) {
-        queue.push(...children.filter(component => !visited.has(component)));
-      }
+
+    // Check component reachability
+    if (appendError(i, checkComponentReachability(diagram, rootBegin, diagramTransitionMap))) {
+      break;
     }
 
-    const unreachableComponents = diagram.content.filter(component => !visited.has(component));
-    if (unreachableComponents.length > 0) {
-      const errors: DiagramErrorDetail[] = unreachableComponents.map(component => ({
-        location: ['content', diagram.content.indexOf(component).toString()],
-        severity: 'warning',
-        message: 'found unreachable diagram component',
-      }));
-      appendError(i, errors);
+    // Perform depth first traversal to check that
+    //   1. all path of the diagram end with a 'back to begin' or an 'end' block
+    //   2. no more than one uncondition transition from the same source to multiple destination
+    if (appendError(i, checkDiagramConnection(diagram, rootBegin, diagramTransitionMap))) {
+      break;
     }
 
     // TODO: additional validataion not cover by the schema

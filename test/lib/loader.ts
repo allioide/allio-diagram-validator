@@ -20,15 +20,18 @@ async function runTestAndSnapshotException(t: ExecutionContext, filename: string
 }
 
 test('empty diagram', async t => runTestShoudPass(t, 'empty.alliodiagram'));
-test('valid diagram (1/2)', async t => runTestShoudPass(t, 'valid_1.alliodiagram'));
-test('valid diagram (2/2)', async t => runTestShoudPass(t, 'valid_2.alliodiagram'));
+test('valid diagram (1/3)', async t => runTestShoudPass(t, 'valid_1.alliodiagram'));
+test('valid diagram (2/3)', async t => runTestShoudPass(t, 'valid_2.alliodiagram'));
+test('valid diagram (3/3)', async t => runTestShoudPass(t, 'valid_3.alliodiagram'));
 
 test('error when missing devices section', async t => runTestAndSnapshotException(t, 'missing_devices_section.alliodiagram'));
 test('error when missing diagrams section', async t => runTestAndSnapshotException(t, 'missing_diagrams_section.alliodiagram'));
 test('error when missing begin block', async t => runTestAndSnapshotException(t, 'missing_begin.alliodiagram'));
 test('error when found more than one begin block', async t => runTestAndSnapshotException(t, 'too_many_begin.alliodiagram'));
-// test.failing('error when missing end block (1/2)', async t => runTestAndSnapshotException(t, 'missing_end_or_back_1.alliodiagram'));
-// test.failing('error when missing end block (2/2)', async t => runTestAndSnapshotException(t, 'missing_end_or_back_2.alliodiagram'));
+
+test('error when missing end block (1/3)', async t => runTestAndSnapshotException(t, 'missing_end_or_back_1.alliodiagram'));
+test('error when missing end block (2/3)', async t => runTestAndSnapshotException(t, 'missing_end_or_back_2.alliodiagram'));
+test('error when missing end block (3/3)', async t => runTestAndSnapshotException(t, 'missing_end_or_back_3.alliodiagram'));
 
 test('error when command contains invalid key (1/9)', async t => runTestAndSnapshotException(t, 'invalid_key_command_1.alliodiagram'));
 test('error when command contains invalid key (2/9)', async t => runTestAndSnapshotException(t, 'invalid_key_command_2.alliodiagram'));
@@ -53,3 +56,5 @@ test('error when transition contains invalid key (10/10)', async t => runTestAnd
 
 test('error when id is not unique (1/2)', async t => runTestAndSnapshotException(t, 'component_id_duplicate_1.alliodiagram'));
 test('error when id is not unique (2/2)', async t => runTestAndSnapshotException(t, 'component_id_duplicate_2.alliodiagram'));
+
+test('error on invalid connection (multiple uncondition transitions with same origin)', async t => runTestAndSnapshotException(t, 'invalid_connection_1.alliodiagram'));

@@ -22,12 +22,10 @@ export function generateIdToDiagramComponentMap(diagram: Diagram): ValidateResul
       } else {
         result.set(component.id, component);
       }
-    } else {
+    } else if (component.type !== 'transition') {
       // Component without id is unreachable unless it is a transition
       // Note: we should not reach here as the schema require id field when component's type is not 'transition'
-      if (component.type !== 'transition') {
-        error.push({location: ['content', i.toString()], severity: 'warning', message: 'found unreachable diagram component'});
-      }
+      error.push({location: ['content', i.toString()], severity: 'warning', message: 'found unreachable diagram component'});
     }
   }
 
@@ -69,6 +67,7 @@ export function generateDiagramTransitionMap(diagram: Diagram, idToDiagramCompon
       } else {
         result.set(source, [component]);
       }
+
       if (result.has(component)) {
         result.get(component)!.push(destination);
       } else {
@@ -78,5 +77,10 @@ export function generateDiagramTransitionMap(diagram: Diagram, idToDiagramCompon
   }
 
   return result;
+}
+
+export function getUnconditionTransition(component: DiagramComponent[]) {
+  return component.filter(element => (element.type === 'transition')
+    && (element.conditions === undefined || element.conditions.length === 0));
 }
 
